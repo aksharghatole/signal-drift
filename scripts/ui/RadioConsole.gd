@@ -1,14 +1,12 @@
 extends Control
 ## RadioConsole.gd
 ##
-## UI layer for the radio console. Handles dial input, updates the
-## waveform, and displays lock results.
-##
-## All gameplay rules live in scripts/core/Radio.gd — this script only
-## translates input into Radio calls and Radio results into UI updates.
+## UI layer for the radio console.
+## Reads the current target from MessageDB, updates the waveform display,
+## and on a successful lock routes the player to the MessageView screen.
 
 const COOLDOWN_SECONDS := 2.0
-const TEST_TOLERANCE := 5.0  ## Temporary. M5 will load targets from data.
+const FALLBACK_SIGNAL_ID := "sig"
 
 @onready var freq_slider: HSlider         = $VBox/FreqRow/FreqSlider
 @onready var amp_slider: HSlider          = $VBox/AmpRow/AmpSlider
@@ -25,16 +23,32 @@ var _cooldown_remaining: float = 0.0
 
 func _ready() -> void:
 	_radio = Radio.new()
-	_radio.set_target(34.0, 61.0, TEST_TOLERANCE)
 
 	freq_slider.value_changed.connect(_on_freq_changed)
 	amp_slider.value_changed.connect(_on_amp_changed)
 	lock_button.pressed.connect(_on_lock_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 
-	# Push initial state into the radio and display.
+	_load_current_target()
+
 	_on_freq_changed(freq_slider.value)
 	_on_amp_changed(amp_slider.value)
+
+
+func _load_current_target() -> void:
+	var msg: Dictionary = MessageDB.get_current()
+	if msg.is_empty():
+		_radio.clear_target()
+		status_label.text = "All signals decoded."
+		lock_button.disabled = true
+		return
+
+	lock_button.disabled = false
+	_radio.set_target(
+		float(msg.get("target_freq", 50)),
+		float(msg.get("target_amp", 50)),
+		float(msg.get("tolerance", 6))
+	)
 	status_label.text = "Search for a signal."
 
 
@@ -43,7 +57,6 @@ func _process(delta: float) -> void:
 		_cooldown_remaining -= delta
 		if _cooldown_remaining <= 0.0:
 			lock_button.disabled = false
-			status_label.text = "Search for a signal."
 
 
 func _on_freq_changed(value: float) -> void:
@@ -65,19 +78,25 @@ func _on_lock_pressed() -> void:
 	var result: Radio.LockResult = _radio.try_lock()
 	match result:
 		Radio.LockResult.HIT:
-			status_label.text = "Signal locked!"
-			# M5 will route this to the message system via Signals.
-			Signals.message_decoded.emit("test_signal_m3")
-			_start_cooldown()
+			_on_hit()
 		Radio.LockResult.MISS:
 			status_label.text = "No signal at this position."
 		Radio.LockResult.NO_TARGET:
 			status_label.text = "No target set."
 
 
-func _start_cooldown() -> void:
+func _on_hit() -> void:
+	var msg: Dictionary = MessageDB.get_current()
+	var msg_id: String = msg.get("id", FALLBACK_SIGNAL_ID)
+
+	Signals.message_decoded.emit(msg_id)
+
 	_cooldown_remaining = COOLDOWN_SECONDS
 	lock_button.disabled = true
+
+	# Route to the message view. The player reads the message, then
+	# presses Back, which advances MessageDB and returns here.
+	SceneRouter.go_to("message_view")
 
 
 func _on_back_pressed() -> void:

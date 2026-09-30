@@ -22,6 +22,7 @@ boot_splash/show_image=false
 
 Signals="*res://scripts/autoload/Signals.gd"
 SceneRouter="*res://scripts/autoload/SceneRouter.gd"
+MessageDB="*res://scripts/autoload/MessageDB.gd"
 
 [display]
 

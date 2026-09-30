@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "messages": [
+    {
+      "id": "msg_001",
+      "band": "band_a",
+      "title": "First Contact",
+      "target_freq": 34,
+      "target_amp": 61,
+      "tolerance": 6,
+      "body": "…if anyone is out there, we made it to the ridge.\n\nThe storm took the eastern tower but the beacon is holding. We can see lights on the far shore — no idea whose.\n\nListening on 92.4. If you hear this, respond."
+    },
+    {
+      "id": "msg_002",
+      "band": "band_a",
+      "title": "Supplies",
+      "target_freq": 72,
+      "target_amp": 38,
+      "tolerance": 6,
+      "body": "…canned goods and fuel are still in the bunker under the school. Codes are the same as always.\n\nWe're down to four. Two of us are sick. The others won't say how bad.\n\nIf you're coming, come soon."
+    },
+    {
+      "id": "msg_003",
+      "band": "band_b",
+      "title": "Do Not Respond",
+      "target_freq": 18,
+      "target_amp": 87,
+      "tolerance": 5,
+      "body": "…whoever you are, stop transmitting. They're listening on every band. Every frequency you try is a beacon.\n\nTurn the radio off. Don't answer anyone.\n\nThis is the last message I can send."
+    }
+  ]
+}

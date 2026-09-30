@@ -12,7 +12,7 @@ var _failures: int = 0
 func _init() -> void:
 	print("== Signal Drift test suite ==")
 
-	# M1 / M2 tests
+	# M1 / M2 / M3 tests
 	_test_main_scene_exists()
 	_test_project_file_parses()
 	_test_all_registered_screens_exist()
@@ -22,12 +22,15 @@ func _init() -> void:
 	_test_main_menu_wires_new_game_to_radio_console()
 	_test_sub_screens_have_back_button()
 	_test_all_sub_screen_back_buttons_resolve()
-
-	# M3 tests
 	_test_radio_lock_result_no_target()
 	_test_radio_lock_result_hit()
 	_test_radio_lock_result_miss()
 	_test_radio_lock_result_on_tolerance_boundary()
+
+	# M5 tests
+	_test_messages_json_exists_and_parses()
+	_test_messages_have_required_fields()
+	_test_message_db_autoload_registered()
 
 	print("")
 	if _failures == 0:
@@ -39,7 +42,7 @@ func _init() -> void:
 
 
 # ---------------------------------------------------------------------------
-# M1 / M2 tests
+# M1 / M2 / M3 tests
 # ---------------------------------------------------------------------------
 
 func _test_main_scene_exists() -> void:
@@ -251,7 +254,6 @@ func _test_sub_screens_have_back_button() -> void:
 		if instance == null:
 			missing.append("%s (instantiate failed)" % screen_name)
 			continue
-		# RadioConsole now nests BackButton under VBox as well.
 		var back: Node = instance.get_node_or_null("VBox/BackButton")
 		if back == null:
 			missing.append("%s (no VBox/BackButton)" % screen_name)
@@ -294,10 +296,6 @@ func _test_all_sub_screen_back_buttons_resolve() -> void:
 	else:
 		_fail("broken @onready paths: %s" % ", ".join(missing))
 
-
-# ---------------------------------------------------------------------------
-# M3 tests — Radio core logic
-# ---------------------------------------------------------------------------
 
 func _test_radio_lock_result_no_target() -> void:
 	var radio: RefCounted = _new_radio()
@@ -353,10 +351,9 @@ func _test_radio_lock_result_on_tolerance_boundary() -> void:
 		return
 
 	radio.set_target(40.0, 60.0, 5.0)
+	radio.freq = 45.0
+	radio.amp = 55.0
 
-	# Exactly on the edge of tolerance should still HIT (inclusive).
-	radio.freq = 45.0  # 40 + 5
-	radio.amp = 55.0   # 60 - 5
 	var result: int = radio.try_lock()
 	if result == radio.LockResult.HIT:
 		_pass("Radio: boundary lock returns HIT (inclusive tolerance)")
@@ -369,6 +366,76 @@ func _new_radio() -> RefCounted:
 	if radio_script == null:
 		return null
 	return radio_script.new()
+
+
+# ---------------------------------------------------------------------------
+# M5 tests
+# ---------------------------------------------------------------------------
+
+func _test_messages_json_exists_and_parses() -> void:
+	var path := "res://data/messages.json"
+	if not FileAccess.file_exists(path):
+		_fail("messages.json missing at %s" % path)
+		return
+
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		_fail("cannot open messages.json")
+		return
+
+	var text := file.get_as_text()
+	file.close()
+
+	var parsed = JSON.parse_string(text)
+	if parsed == null or typeof(parsed) != TYPE_DICTIONARY:
+		_fail("messages.json is not a valid JSON object")
+		return
+
+	if not parsed.has("messages") or typeof(parsed["messages"]) != TYPE_ARRAY:
+		_fail("messages.json missing 'messages' array")
+		return
+
+	if parsed["messages"].size() < 3:
+		_fail("messages.json has %d messages (expected >= 3)" % parsed["messages"].size())
+		return
+
+	_pass("messages.json parses and has %d messages" % parsed["messages"].size())
+
+
+func _test_messages_have_required_fields() -> void:
+	var path := "res://data/messages.json"
+	if not FileAccess.file_exists(path):
+		_fail("messages.json missing")
+		return
+
+	var file := FileAccess.open(path, FileAccess.READ)
+	var text := file.get_as_text()
+	file.close()
+
+	var parsed = JSON.parse_string(text)
+	var messages: Array = parsed.get("messages", [])
+
+	var required := ["id", "title", "body", "target_freq", "target_amp", "tolerance"]
+	var broken: Array[String] = []
+
+	for i in messages.size():
+		var m: Dictionary = messages[i]
+		for field in required:
+			if not m.has(field):
+				broken.append("msg[%d] missing '%s'" % [i, field])
+
+	if broken.is_empty():
+		_pass("all %d messages have required fields" % messages.size())
+	else:
+		_fail("broken messages: %s" % ", ".join(broken))
+
+
+func _test_message_db_autoload_registered() -> void:
+	var autoload_setting: String = ProjectSettings.get_setting("autoload/MessageDB", "")
+	if autoload_setting.begins_with("*") and autoload_setting.contains("MessageDB.gd"):
+		_pass("MessageDB is registered as an autoload")
+	else:
+		_fail("MessageDB autoload not registered (got '%s')" % autoload_setting)
 
 
 # --- helpers ---
