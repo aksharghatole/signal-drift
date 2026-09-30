@@ -1,0 +1,34 @@
+{
+  "name": "Signal Drift (Godot 4 + Android)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "jdkDistro": "tem"
+    },
+    "ghcr.io/devcontainers/features/android-sdk:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "geequlim.godot-tools",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "files.associations": {
+          "*.gd": "gdscript",
+          "*.tscn": "ini"
+        }
+      }
+    }
+  },
+
+  "remoteUser": "vscode"
+}

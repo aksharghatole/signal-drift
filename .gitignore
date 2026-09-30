@@ -1,0 +1,39 @@
+# Godot 4+
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# Godot-specific ignores
+*.translation
+
+# Exported builds
+build/
+export/
+*.apk
+*.aab
+*.ipa
+
+# Editor/OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Android keystores — NEVER commit these
+*.keystore
+*.jks
+
+# Python/Node (devcontainer side)
+__pycache__/
+node_modules/
+
+# Local env
+.env
+.env.local
