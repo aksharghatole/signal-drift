@@ -5,10 +5,6 @@ extends SceneTree
 ## Invoke with:  godot --headless --path . --script tests/run_tests.gd
 ##
 ## Exits with code 0 on success, 1 on failure.
-##
-## Note: this script extends SceneTree, so it is not a Node and cannot use
-## get_node() with absolute paths. It instantiates scripts directly instead
-## of relying on Godot's autoload machinery.
 
 var _failures: int = 0
 
@@ -21,6 +17,8 @@ func _init() -> void:
 	_test_all_registered_screens_exist()
 	_test_signals_script_declares_expected_signals()
 	_test_scene_router_navigates_and_returns()
+	_test_main_menu_has_five_buttons()
+	_test_main_menu_wires_new_game_to_radio_console()
 
 	print("")
 	if _failures == 0:
@@ -81,8 +79,6 @@ func _test_signals_script_declares_expected_signals() -> void:
 		_fail("cannot load Signals.gd")
 		return
 
-	# Instantiate the script so we can ask about its signals.
-	# The script extends Node, so instantiate() gives us a real Node.
 	var signals_instance: Object = signals_script.new()
 	if signals_instance == null:
 		_fail("cannot instantiate Signals.gd")
@@ -145,6 +141,79 @@ func _test_scene_router_navigates_and_returns() -> void:
 	_pass("router navigates and returns correctly")
 	container.queue_free()
 	router.free()
+
+
+func _test_main_menu_has_five_buttons() -> void:
+	var path := "res://scenes/MainMenu.tscn"
+	if not ResourceLoader.exists(path):
+		_fail("MainMenu.tscn missing")
+		return
+
+	var scene: PackedScene = load(path)
+	if scene == null:
+		_fail("MainMenu.tscn failed to load")
+		return
+
+	var instance: Node = scene.instantiate()
+	if instance == null:
+		_fail("MainMenu.tscn failed to instantiate")
+		return
+
+	var buttons_root: Node = instance.get_node_or_null("Center/Buttons")
+	if buttons_root == null:
+		_fail("MainMenu: Buttons container not found at Center/Buttons")
+		instance.free()
+		return
+
+	var count: int = 0
+	for child in buttons_root.get_children():
+		if child is Button:
+			count += 1
+
+	if count == 5:
+		_pass("MainMenu has exactly 5 buttons")
+	else:
+		_fail("MainMenu has %d buttons (expected 5)" % count)
+
+	instance.free()
+
+
+func _test_main_menu_wires_new_game_to_radio_console() -> void:
+	var path := "res://scenes/MainMenu.tscn"
+	if not ResourceLoader.exists(path):
+		_fail("MainMenu.tscn missing")
+		return
+
+	var scene: PackedScene = load(path)
+	if scene == null:
+		_fail("MainMenu.tscn failed to load")
+		return
+
+	var instance: Node = scene.instantiate()
+	if instance == null:
+		_fail("MainMenu.tscn failed to instantiate")
+		return
+
+	var required_paths := [
+		"Center/Buttons/NewGameButton",
+		"Center/Buttons/ContinueButton",
+		"Center/Buttons/CodexButton",
+		"Center/Buttons/SettingsButton",
+		"Center/Buttons/QuitButton",
+		"Center/VersionLabel",
+	]
+
+	var missing: Array[String] = []
+	for p in required_paths:
+		if instance.get_node_or_null(p) == null:
+			missing.append(p)
+
+	if missing.is_empty():
+		_pass("MainMenu.gd @onready paths all resolve")
+	else:
+		_fail("MainMenu missing nodes: %s" % ", ".join(missing))
+
+	instance.free()
 
 
 # --- helpers ---
