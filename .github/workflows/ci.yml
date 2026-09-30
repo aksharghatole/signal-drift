@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  boot-test:
+  test:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +24,5 @@ jobs:
           sudo chmod +x /usr/local/bin/godot
           godot --version
 
-      - name: Boot smoke test
-        run: godot --headless --path . --quit-after 5
-
       - name: Run tests
-        run: godot --headless --path . --script tests/run_tests.gd
+        run: godot --headless --path . --run-tests

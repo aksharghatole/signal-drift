@@ -1,15 +1,15 @@
-extends SceneTree
+extends RefCounted
 ## run_tests.gd
 ##
-## Headless test runner.
-## Invoke with:  godot --headless --path . --script tests/run_tests.gd
+## Test runner for Signal Drift.
+## Invoked by Main.gd when the "--test" flag is present.
 ##
-## Exits with code 0 on success, 1 on failure.
+## Returns the number of failed tests (0 = all passed).
 
 var _failures: int = 0
 
 
-func _init() -> void:
+func run_all() -> int:
 	print("== Signal Drift test suite ==")
 
 	# M1 / M2 / M3 tests
@@ -35,10 +35,10 @@ func _init() -> void:
 	print("")
 	if _failures == 0:
 		print("ALL TESTS PASSED")
-		quit(0)
 	else:
 		print("FAILED: %d test(s)" % _failures)
-		quit(1)
+
+	return _failures
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +130,7 @@ func _test_scene_router_navigates_and_returns() -> void:
 		return
 
 	var container := Node.new()
-	get_root().add_child(container)
+	Engine.get_main_loop().root.add_child(container)
 	router.attach_container(container)
 
 	router.go_to("main_menu")

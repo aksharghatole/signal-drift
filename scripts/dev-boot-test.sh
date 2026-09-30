@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Boot the project headlessly and exit. Used as a smoke test.
+# Run the Signal Drift test suite via the --test flag.
+# This runs in the same environment as the real game (autoloads registered,
+# class_name types visible) so output is clean — no false-positive
+# SCRIPT ERROR lines from --script mode.
 set -euo pipefail
 
 if ! command -v godot >/dev/null 2>&1; then
@@ -8,7 +11,7 @@ if ! command -v godot >/dev/null 2>&1; then
   exit 127
 fi
 
-echo ">> Booting Signal Drift headlessly..."
-godot --headless --path . --quit-after 5
+echo ">> Running Signal Drift test suite..."
+godot --headless --path . --run-tests
 
-echo ">> Boot test complete."
+echo ">> Test run complete."

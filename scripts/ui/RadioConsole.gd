@@ -1,4 +1,5 @@
 extends Control
+const Radio := preload("res://scripts/core/Radio.gd")
 ## RadioConsole.gd
 ##
 ## UI layer for the radio console.
