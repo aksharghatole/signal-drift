@@ -12,6 +12,7 @@ var _failures: int = 0
 func _init() -> void:
 	print("== Signal Drift test suite ==")
 
+	# M1 / M2 tests
 	_test_main_scene_exists()
 	_test_project_file_parses()
 	_test_all_registered_screens_exist()
@@ -22,6 +23,12 @@ func _init() -> void:
 	_test_sub_screens_have_back_button()
 	_test_all_sub_screen_back_buttons_resolve()
 
+	# M3 tests
+	_test_radio_lock_result_no_target()
+	_test_radio_lock_result_hit()
+	_test_radio_lock_result_miss()
+	_test_radio_lock_result_on_tolerance_boundary()
+
 	print("")
 	if _failures == 0:
 		print("ALL TESTS PASSED")
@@ -30,6 +37,10 @@ func _init() -> void:
 		print("FAILED: %d test(s)" % _failures)
 		quit(1)
 
+
+# ---------------------------------------------------------------------------
+# M1 / M2 tests
+# ---------------------------------------------------------------------------
 
 func _test_main_scene_exists() -> void:
 	var path := "res://scenes/Main.tscn"
@@ -219,8 +230,6 @@ func _test_main_menu_wires_new_game_to_radio_console() -> void:
 
 
 func _test_sub_screens_have_back_button() -> void:
-	# For each of the four sub-screens, load the scene and verify it has
-	# a VBox/BackButton node that the script will wire up.
 	var screens := {
 		"RadioConsole": "res://scenes/RadioConsole.tscn",
 		"MessageView":  "res://scenes/MessageView.tscn",
@@ -242,6 +251,7 @@ func _test_sub_screens_have_back_button() -> void:
 		if instance == null:
 			missing.append("%s (instantiate failed)" % screen_name)
 			continue
+		# RadioConsole now nests BackButton under VBox as well.
 		var back: Node = instance.get_node_or_null("VBox/BackButton")
 		if back == null:
 			missing.append("%s (no VBox/BackButton)" % screen_name)
@@ -254,7 +264,6 @@ func _test_sub_screens_have_back_button() -> void:
 
 
 func _test_all_sub_screen_back_buttons_resolve() -> void:
-	# Verify the @onready path in each sub-screen script resolves.
 	var screen_scripts := {
 		"RadioConsole": "res://scenes/RadioConsole.tscn",
 		"MessageView":  "res://scenes/MessageView.tscn",
@@ -284,6 +293,82 @@ func _test_all_sub_screen_back_buttons_resolve() -> void:
 		_pass("all 4 sub-screen scripts' @onready paths resolve")
 	else:
 		_fail("broken @onready paths: %s" % ", ".join(missing))
+
+
+# ---------------------------------------------------------------------------
+# M3 tests — Radio core logic
+# ---------------------------------------------------------------------------
+
+func _test_radio_lock_result_no_target() -> void:
+	var radio: RefCounted = _new_radio()
+	if radio == null:
+		_fail("cannot instantiate Radio")
+		return
+
+	var result: int = radio.try_lock()
+	if result == radio.LockResult.NO_TARGET:
+		_pass("Radio: try_lock with no target returns NO_TARGET")
+	else:
+		_fail("Radio: expected NO_TARGET, got %d" % result)
+
+
+func _test_radio_lock_result_hit() -> void:
+	var radio: RefCounted = _new_radio()
+	if radio == null:
+		_fail("cannot instantiate Radio")
+		return
+
+	radio.set_target(40.0, 60.0, 5.0)
+	radio.freq = 40.0
+	radio.amp = 60.0
+
+	var result: int = radio.try_lock()
+	if result == radio.LockResult.HIT:
+		_pass("Radio: exact-match lock returns HIT")
+	else:
+		_fail("Radio: expected HIT, got %d" % result)
+
+
+func _test_radio_lock_result_miss() -> void:
+	var radio: RefCounted = _new_radio()
+	if radio == null:
+		_fail("cannot instantiate Radio")
+		return
+
+	radio.set_target(40.0, 60.0, 5.0)
+	radio.freq = 10.0
+	radio.amp = 60.0
+
+	var result: int = radio.try_lock()
+	if result == radio.LockResult.MISS:
+		_pass("Radio: out-of-tolerance lock returns MISS")
+	else:
+		_fail("Radio: expected MISS, got %d" % result)
+
+
+func _test_radio_lock_result_on_tolerance_boundary() -> void:
+	var radio: RefCounted = _new_radio()
+	if radio == null:
+		_fail("cannot instantiate Radio")
+		return
+
+	radio.set_target(40.0, 60.0, 5.0)
+
+	# Exactly on the edge of tolerance should still HIT (inclusive).
+	radio.freq = 45.0  # 40 + 5
+	radio.amp = 55.0   # 60 - 5
+	var result: int = radio.try_lock()
+	if result == radio.LockResult.HIT:
+		_pass("Radio: boundary lock returns HIT (inclusive tolerance)")
+	else:
+		_fail("Radio: expected HIT at boundary, got %d" % result)
+
+
+func _new_radio() -> RefCounted:
+	var radio_script: GDScript = load("res://scripts/core/Radio.gd")
+	if radio_script == null:
+		return null
+	return radio_script.new()
 
 
 # --- helpers ---
