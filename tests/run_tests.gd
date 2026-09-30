@@ -19,6 +19,8 @@ func _init() -> void:
 	_test_scene_router_navigates_and_returns()
 	_test_main_menu_has_five_buttons()
 	_test_main_menu_wires_new_game_to_radio_console()
+	_test_sub_screens_have_back_button()
+	_test_all_sub_screen_back_buttons_resolve()
 
 	print("")
 	if _failures == 0:
@@ -214,6 +216,74 @@ func _test_main_menu_wires_new_game_to_radio_console() -> void:
 		_fail("MainMenu missing nodes: %s" % ", ".join(missing))
 
 	instance.free()
+
+
+func _test_sub_screens_have_back_button() -> void:
+	# For each of the four sub-screens, load the scene and verify it has
+	# a VBox/BackButton node that the script will wire up.
+	var screens := {
+		"RadioConsole": "res://scenes/RadioConsole.tscn",
+		"MessageView":  "res://scenes/MessageView.tscn",
+		"Codex":        "res://scenes/Codex.tscn",
+		"Settings":     "res://scenes/Settings.tscn",
+	}
+
+	var missing: Array[String] = []
+	for screen_name in screens.keys():
+		var path: String = screens[screen_name]
+		if not ResourceLoader.exists(path):
+			missing.append("%s (file missing)" % screen_name)
+			continue
+		var scene: PackedScene = load(path)
+		if scene == null:
+			missing.append("%s (load failed)" % screen_name)
+			continue
+		var instance: Node = scene.instantiate()
+		if instance == null:
+			missing.append("%s (instantiate failed)" % screen_name)
+			continue
+		var back: Node = instance.get_node_or_null("VBox/BackButton")
+		if back == null:
+			missing.append("%s (no VBox/BackButton)" % screen_name)
+		instance.free()
+
+	if missing.is_empty():
+		_pass("all 4 sub-screens have VBox/BackButton")
+	else:
+		_fail("missing back buttons: %s" % ", ".join(missing))
+
+
+func _test_all_sub_screen_back_buttons_resolve() -> void:
+	# Verify the @onready path in each sub-screen script resolves.
+	var screen_scripts := {
+		"RadioConsole": "res://scenes/RadioConsole.tscn",
+		"MessageView":  "res://scenes/MessageView.tscn",
+		"Codex":        "res://scenes/Codex.tscn",
+		"Settings":     "res://scenes/Settings.tscn",
+	}
+
+	var missing: Array[String] = []
+	for screen_name in screen_scripts.keys():
+		var path: String = screen_scripts[screen_name]
+		if not ResourceLoader.exists(path):
+			missing.append("%s (file missing)" % screen_name)
+			continue
+		var scene: PackedScene = load(path)
+		if scene == null:
+			missing.append("%s (load failed)" % screen_name)
+			continue
+		var instance: Node = scene.instantiate()
+		if instance == null:
+			missing.append("%s (instantiate failed)" % screen_name)
+			continue
+		if instance.get_node_or_null("VBox/BackButton") == null:
+			missing.append("%s ($VBox/BackButton)" % screen_name)
+		instance.free()
+
+	if missing.is_empty():
+		_pass("all 4 sub-screen scripts' @onready paths resolve")
+	else:
+		_fail("broken @onready paths: %s" % ", ".join(missing))
 
 
 # --- helpers ---
