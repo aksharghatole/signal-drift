@@ -1,52 +1,49 @@
 # Signal Drift
 
-A radio-tuning puzzle game for Android. You are the last operator listening
-after a global storm.
+A radio-tuning puzzle game for Android. You are the last operator
+listening after a global storm.
 
 ## Status
 
-Milestone 1: Project boots.
+Playable MVP loop: main menu → radio console → decoded messages.
+
+See the Issues page for the roadmap and open work.
 
 ## Tech
 
-- **Engine:** Godot 4.x (GDScript)
-- **Target:** Android (API 26+)
-- **Dev env:** GitHub Codespaces
-- **License:** MIT (see LICENSE)
+- Engine: Godot 4.3 (GDScript)
+- Target: Android (API 26+)
+- Dev env: GitHub Codespaces
+- License: MIT (see LICENSE)
 
-## Development
+## Resume Development
 
-### Boot test (headless)
+1. Open the Codespace for this repo (or create a new one)
+2. Godot is installed automatically via `.devcontainer/setup.sh`
+3. Run tests: `./scripts/dev-boot-test.sh`
+4. Game entry point: `scenes/Main.tscn`
 
+## Development Commands
+
+    # Run the test suite (clean, no noise)
     ./scripts/dev-boot-test.sh
 
-Or directly:
+    # Boot the game headlessly (smoke test)
+    godot --headless --path . --quit-after 5
 
-    godot --headless --path . --quit-after 3
-
-### Run tests (headless)
-
-    godot --headless --path . --script tests/run_tests.gd
-
-### Open in editor
-
-Point a **local** Godot 4.x installation at this repo folder and open
-`project.godot`. Codespaces itself does not provide the graphical editor.
-
-## Android build
-
-See `docs/android-build.md` (added in Milestone 9).
+    # Open in the editor
+    # Requires local Godot 4.3. Point it at this folder, open project.godot.
 
 ## Project structure
 
-    assets/       fonts, audio, icon
-    data/         messages.json and other content
-    scenes/       .tscn scene files
-    scripts/      GDScript source
-      autoload/   singletons
-      core/       gameplay logic (no UI)
-      ui/         UI scripts
-    tests/        headless test scripts
+    assets/         fonts, audio, icon
+    data/           messages.json and content
+    scenes/         .tscn scene files
+    scripts/
+      autoload/     Signals, SceneRouter, MessageDB
+      core/         Radio, WaveformDisplay (no UI)
+      ui/           one script per screen
+    tests/          headless test runner
 
 ## License
 
