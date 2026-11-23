@@ -5,6 +5,8 @@ extends Control
 ## On Back, advances MessageDB to the next message and returns to the
 ## radio console.
 
+const CHARACTERS_PER_SECOND := 55.0
+
 @onready var title_label: Label = $VBox/TitleLabel
 @onready var body_label: Label  = $VBox/BodyScroll/BodyLabel
 @onready var back_button: Button = $VBox/BackButton
@@ -24,6 +26,17 @@ func _display_current_message() -> void:
 
 	title_label.text = msg.get("title", "Untitled")
 	body_label.text = msg.get("body", "")
+	var character_count := body_label.get_total_character_count()
+	if character_count == 0:
+		return
+
+	# Reveal the text without changing the label's wrapping as it appears.
+	body_label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
+	body_label.visible_characters = 0
+	var reveal := create_tween()
+	reveal.tween_property(
+		body_label, "visible_characters", character_count, character_count / CHARACTERS_PER_SECOND
+	)
 
 
 func _on_back_pressed() -> void:
