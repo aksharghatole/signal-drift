@@ -25,13 +25,13 @@ func _ready() -> void:
 
 
 func _on_new_game_pressed() -> void:
+	MessageDB.reset()
 	Signals.game_started.emit()
 	SceneRouter.go_to("radio_console")
 
 
 func _on_continue_pressed() -> void:
-	# M2b placeholder: no save system yet, so Continue behaves like New Game.
-	# In M7 this will load the most recent save.
+	# Resume the current in-memory session. Disk persistence follows in M7.
 	SceneRouter.go_to("radio_console")
 
 

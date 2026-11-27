@@ -7,7 +7,6 @@ const Radio := preload("res://scripts/core/Radio.gd")
 ## and on a successful lock routes the player to the MessageView screen.
 
 const COOLDOWN_SECONDS := 2.0
-const FALLBACK_SIGNAL_ID := "sig"
 
 @onready var freq_slider: HSlider         = $VBox/FreqRow/FreqSlider
 @onready var amp_slider: HSlider          = $VBox/AmpRow/AmpSlider
@@ -50,7 +49,7 @@ func _load_current_target() -> void:
 		float(msg.get("target_amp", 50)),
 		float(msg.get("tolerance", 6))
 	)
-	status_label.text = "Search for a signal."
+	status_label.text = "%s • %d/%d decoded" % [str(msg.get("band", "band_a")).replace("_", " ").to_upper(), MessageDB.get_decoded_ids().size(), MessageDB.get_count()]
 
 
 func _process(delta: float) -> void:
@@ -88,7 +87,9 @@ func _on_lock_pressed() -> void:
 
 func _on_hit() -> void:
 	var msg: Dictionary = MessageDB.get_current()
-	var msg_id: String = msg.get("id", FALLBACK_SIGNAL_ID)
+	var msg_id: String = msg.get("id", "")
+	if not MessageDB.record_decode(msg_id):
+		return
 
 	Signals.message_decoded.emit(msg_id)
 
@@ -96,7 +97,7 @@ func _on_hit() -> void:
 	lock_button.disabled = true
 
 	# Route to the message view. The player reads the message, then
-	# presses Back, which advances MessageDB and returns here.
+	# presses Back to return to the next unlocked signal.
 	SceneRouter.go_to("message_view")
 
 

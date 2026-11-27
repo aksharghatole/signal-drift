@@ -8,12 +8,13 @@ extends Node
 ##   MessageDB.get_all()             -> Array[Dictionary]
 ##   MessageDB.get_by_id("msg_001")  -> Dictionary or {}
 ##   MessageDB.get_current()         -> Dictionary or {}
-##   MessageDB.advance()             -> moves current pointer forward
+##   MessageDB.record_decode(id)     -> records the current signal once
 
 const DATA_PATH := "res://data/messages.json"
 
 var _messages: Array = []
-var _current_index: int = 0
+var _decoded_ids: Array[String] = []
+var _last_decoded_id: String = ""
 
 
 func _ready() -> void:
@@ -43,7 +44,7 @@ func _load() -> void:
 		return
 
 	_messages = parsed["messages"]
-	_current_index = 0
+	reset()
 
 
 func get_all() -> Array:
@@ -61,25 +62,59 @@ func get_by_id(message_id: String) -> Dictionary:
 	return {}
 
 
-## Returns the message the player is currently working on,
-## or {} if all have been decoded.
+## Bands unlock in order of their first appearance in the message pack.
+## Every message in an earlier band must be decoded before the next opens.
+func get_unlocked_bands() -> Array[String]:
+	var bands: Array[String] = []
+	for message in _messages:
+		var band := str(message.get("band", "band_a"))
+		if not bands.has(band):
+			bands.append(band)
+	var unlocked: Array[String] = []
+	for band in bands:
+		unlocked.append(band)
+		for message in _messages:
+			if str(message.get("band", "band_a")) == band:
+				if not _decoded_ids.has(str(message.get("id", ""))):
+					return unlocked
+	return unlocked
+
+
 func get_current() -> Dictionary:
-	if _current_index >= _messages.size():
-		return {}
-	return _messages[_current_index]
+	var unlocked := get_unlocked_bands()
+	for message in _messages:
+		if unlocked.has(str(message.get("band", "band_a"))) and not _decoded_ids.has(str(message.get("id", ""))):
+			return message
+	return {}
 
 
-## Move to the next message. Returns true if there was one to advance to.
-func advance() -> bool:
-	if _current_index < _messages.size():
-		_current_index += 1
-	return _current_index < _messages.size()
+## Only the active target can be decoded; duplicate or locked IDs are rejected.
+func record_decode(message_id: String) -> bool:
+	var current := get_current()
+	if current.is_empty() or current.get("id", "") != message_id or message_id.is_empty():
+		return false
+	_decoded_ids.append(message_id)
+	_last_decoded_id = message_id
+	return true
 
 
-## For tests and debugging.
-func set_current_index(index: int) -> void:
-	_current_index = clampi(index, 0, _messages.size())
+func get_decoded_ids() -> Array[String]:
+	return _decoded_ids.duplicate()
+
+
+func get_decoded_messages() -> Array[Dictionary]:
+	var messages: Array[Dictionary] = []
+	for message_id in _decoded_ids:
+		var message := get_by_id(message_id)
+		if not message.is_empty():
+			messages.append(message)
+	return messages
+
+
+func get_last_decoded() -> Dictionary:
+	return get_by_id(_last_decoded_id)
 
 
 func reset() -> void:
-	_current_index = 0
+	_decoded_ids.clear()
+	_last_decoded_id = ""
