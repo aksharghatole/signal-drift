@@ -1,4 +1,5 @@
 extends RefCounted
+const RadioModel := preload("res://scripts/core/Radio.gd")
 ## run_tests.gd
 ##
 ## Test runner for Signal Drift.
@@ -542,7 +543,7 @@ func _test_invalid_save_preserves_progress() -> void:
 
 
 func _test_signal_quality() -> void:
-	var radio := Radio.new()
+	var radio := RadioModel.new()
 	var no_target := is_zero_approx(radio.signal_quality())
 	radio.set_target(40.0, 60.0, 5.0)
 	radio.freq = 0.0
@@ -563,6 +564,9 @@ func _test_signal_quality() -> void:
 
 func _test_rotary_controls() -> void:
 	var scene: PackedScene = load("res://scenes/RadioConsole.tscn")
+	if scene == null or not scene.can_instantiate():
+		_fail("radio scene cannot instantiate")
+		return
 	var console: Node = scene.instantiate()
 	var freq: Range = console.get_node("VBox/Dials/Frequency/FreqDial")
 	var amp: Range = console.get_node("VBox/Dials/Amplitude/AmpDial")

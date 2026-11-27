@@ -52,7 +52,7 @@ func _run_tests_deferred() -> void:
 
 func _run_tests() -> void:
 	var runner_script: GDScript = load("res://tests/run_tests.gd")
-	if runner_script == null:
+	if runner_script == null or not runner_script.can_instantiate():
 		push_error("Main: cannot load test runner at res://tests/run_tests.gd")
 		get_tree().quit(2)
 		return
