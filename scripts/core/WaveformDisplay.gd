@@ -1,59 +1,48 @@
 class_name WaveformDisplay
 extends Control
-## WaveformDisplay.gd
-##
-## Draws a live waveform that reacts to freq/amp values.
-
-const POINT_COUNT := 128
-const BASE_AMPLITUDE := 0.4
-const BASE_CYCLES := 8.0
-
-@onready var _line: Line2D = $Line
-
-var _freq: float = 50.0
-var _amp: float = 50.0
+## Oscilloscope grid, persistent phosphor glow and interference feedback.
+const POINT_COUNT := 160
+var _freq := 50.0
+var _amp := 50.0
+var _quality := 0.0
+var _display_quality := 0.0
+var _phase := 0.0
 
 
-func _ready() -> void:
-	_line.width = 2.0
-	_line.default_color = Color(0.25, 0.82, 0.79)
-	_line.joint_mode = Line2D.LINE_JOINT_ROUND
-	_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	_line.end_cap_mode = Line2D.LINE_CAP_ROUND
-	_rebuild()
-
-
-func set_values(freq: float, amp: float) -> void:
+func set_values(freq: float, amp: float, quality: float = 0.0) -> void:
 	_freq = freq
 	_amp = amp
-	_rebuild()
+	_quality = clampf(quality, 0.0, 1.0)
 
 
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED:
-		_rebuild()
+func _process(delta: float) -> void:
+	_phase = fmod(_phase + delta * 2.0, TAU)
+	_display_quality = lerpf(_display_quality, _quality, 1.0 - exp(-delta * 9.0))
+	queue_redraw()
 
 
-func _rebuild() -> void:
-	if _line == null:
+func _draw() -> void:
+	if size.x < 32.0 or size.y < 32.0:
 		return
-
-	var w: float = size.x
-	var h: float = size.y
-	if w <= 0.0 or h <= 0.0:
-		return
-
-	var half_h: float = h * 0.5
-	var mid_y: float = h * 0.5
-
-	var cycles: float = BASE_CYCLES * (_freq / 100.0)
-	var peak: float = BASE_AMPLITUDE * (_amp / 100.0) * half_h
-
+	var area := Rect2(Vector2.ZERO, size)
+	draw_rect(area, Color("#081618"))
+	draw_rect(area.grow(-1.0), Color("#35504d"), false, 2.0)
+	var inset := Vector2(14.0, 14.0)
+	var span := size - inset * 2.0
+	for i in range(1, 10):
+		var x := inset.x + span.x * float(i) / 10.0
+		draw_line(Vector2(x, inset.y), Vector2(x, size.y - inset.y), Color("#193a38"), 1.0)
+	for i in range(1, 6):
+		var y := inset.y + span.y * float(i) / 6.0
+		draw_line(Vector2(inset.x, y), Vector2(size.x - inset.x, y), Color("#193a38"), 1.0)
 	var points := PackedVector2Array()
-	points.resize(POINT_COUNT)
-	for i in POINT_COUNT:
-		var t: float = float(i) / float(POINT_COUNT - 1)
-		var x: float = t * w
-		var y: float = mid_y - sin(t * TAU * cycles) * peak
-		points[i] = Vector2(x, y)
-	_line.points = points
+	for i in range(POINT_COUNT):
+		var t := float(i) / float(POINT_COUNT - 1)
+		var signal_value := sin(t * TAU * (2.0 + 7.0 * _freq / 100.0) - _phase) * (0.13 + 0.28 * _amp / 100.0)
+		var interference := (sin(t * 113.0 + _phase * 5.0) + sin(t * 251.0 - _phase * 7.0)) * 0.09 * (1.0 - _display_quality)
+		var y := size.y * 0.5 - (signal_value + interference) * span.y
+		points.append(Vector2(inset.x + t * span.x, clampf(y, inset.y, size.y - inset.y)))
+	var ink := Color("#b88d57").lerp(Color("#8ce8c5"), _display_quality)
+	draw_polyline(points, Color(ink, 0.12), 9.0, true)
+	draw_polyline(points, Color(ink, 0.30), 4.0, true)
+	draw_polyline(points, ink, 1.8, true)

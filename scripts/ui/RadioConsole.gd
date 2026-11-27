@@ -8,14 +8,16 @@ const Radio := preload("res://scripts/core/Radio.gd")
 
 const COOLDOWN_SECONDS := 2.0
 
-@onready var freq_slider: HSlider         = $VBox/FreqRow/FreqSlider
-@onready var amp_slider: HSlider          = $VBox/AmpRow/AmpSlider
-@onready var freq_value: Label            = $VBox/FreqRow/FreqValue
-@onready var amp_value: Label             = $VBox/AmpRow/AmpValue
+@onready var freq_slider: Range           = $VBox/Dials/Frequency/FreqDial
+@onready var amp_slider: Range            = $VBox/Dials/Amplitude/AmpDial
+@onready var freq_value: Label            = $VBox/Dials/Frequency/FreqValue
+@onready var amp_value: Label             = $VBox/Dials/Amplitude/AmpValue
 @onready var waveform: Control            = $VBox/Waveform
 @onready var lock_button: Button          = $VBox/LockButton
 @onready var status_label: Label          = $VBox/StatusLabel
 @onready var back_button: Button          = $VBox/BackButton
+@onready var signal_meter: ProgressBar    = $VBox/SignalMeter
+@onready var signal_label: Label          = $VBox/SignalLabel
 
 var _radio: Radio = null
 var _cooldown_remaining: float = 0.0
@@ -62,13 +64,27 @@ func _process(delta: float) -> void:
 func _on_freq_changed(value: float) -> void:
 	_radio.freq = value
 	freq_value.text = "%d" % int(value)
-	waveform.set_values(_radio.freq, _radio.amp)
+	_update_feedback()
 
 
 func _on_amp_changed(value: float) -> void:
 	_radio.amp = value
 	amp_value.text = "%d" % int(value)
-	waveform.set_values(_radio.freq, _radio.amp)
+	_update_feedback()
+
+
+func _update_feedback() -> void:
+	var quality := _radio.signal_quality()
+	waveform.set_values(_radio.freq, _radio.amp, quality)
+	signal_meter.value = quality * 100.0
+	if _radio.target == null:
+		signal_label.text = "NO ACTIVE SIGNAL"
+	elif _radio.try_lock() == Radio.LockResult.HIT:
+		signal_label.text = "SIGNAL ALIGNED • LOCK READY"
+	elif quality > 0.55:
+		signal_label.text = "SIGNAL NEARBY"
+	else:
+		signal_label.text = "SCANNING • INTERFERENCE"
 
 
 func _on_lock_pressed() -> void:

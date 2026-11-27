@@ -62,3 +62,13 @@ func try_lock() -> LockResult:
 	if target.matches(freq, amp):
 		return LockResult.HIT
 	return LockResult.MISS
+
+## Feedback uses worst-axis distance, so both controls must be tuned.
+## Exact target gives 1.0; inside tolerance always gives at least 0.85.
+func signal_quality() -> float:
+	if target == null:
+		return 0.0
+	var distance := maxf(absf(freq - target.freq), absf(amp - target.amp))
+	if distance <= target.tolerance:
+		return 1.0 - 0.15 * distance / maxf(target.tolerance, 0.001)
+	return 0.85 * exp(-(distance - target.tolerance) / 18.0)
