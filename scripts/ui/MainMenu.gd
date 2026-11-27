@@ -16,6 +16,7 @@ const VERSION_LABEL := "v0.1.0"
 
 func _ready() -> void:
 	version_label.text = VERSION_LABEL
+	continue_button.disabled = not SaveManager.has_session()
 
 	new_game_button.pressed.connect(_on_new_game_pressed)
 	continue_button.pressed.connect(_on_continue_pressed)
@@ -25,14 +26,28 @@ func _ready() -> void:
 
 
 func _on_new_game_pressed() -> void:
+	if SaveManager.has_session():
+		var confirm := ConfirmationDialog.new()
+		confirm.title = "Start a new game?"
+		confirm.dialog_text = "This replaces your current radio progress."
+		confirm.confirmed.connect(_start_new_game)
+		confirm.confirmed.connect(confirm.queue_free)
+		confirm.canceled.connect(confirm.queue_free)
+		add_child(confirm)
+		confirm.popup_centered()
+		return
+	_start_new_game()
+
+
+func _start_new_game() -> void:
 	MessageDB.reset()
 	Signals.game_started.emit()
 	SceneRouter.go_to("radio_console")
 
 
 func _on_continue_pressed() -> void:
-	# Resume the current in-memory session. Disk persistence follows in M7.
-	SceneRouter.go_to("radio_console")
+	if SaveManager.has_session():
+		SceneRouter.go_to("radio_console")
 
 
 func _on_codex_pressed() -> void:
@@ -44,4 +59,6 @@ func _on_settings_pressed() -> void:
 
 
 func _on_quit_pressed() -> void:
+	if SaveManager.has_session():
+		SaveManager.save()
 	get_tree().quit(0)

@@ -7,7 +7,9 @@ listening after a global storm.
 
 Playable MVP loop: main menu → radio console → decoded messages.
 Frequency bands unlock as their transmissions are decoded; the Codex archives
-all decoded messages for the current session. Progress is not yet saved to disk.
+all decoded messages. Progress is saved locally in a versioned JSON file at
+`user://save.json`. Continue resumes the saved session; Settings can erase it
+with confirmation.
 
 See the Issues page for the roadmap and open work.
 
