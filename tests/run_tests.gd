@@ -1,4 +1,5 @@
 extends RefCounted
+const RadioModel := preload("res://scripts/core/Radio.gd")
 ## run_tests.gd
 ##
 ## Test runner for Signal Drift.
@@ -37,6 +38,8 @@ func run_all() -> int:
 	_test_codex_shows_only_decoded_messages()
 	_test_save_round_trip_and_erase()
 	_test_invalid_save_preserves_progress()
+	_test_signal_quality()
+	_test_rotary_controls()
 
 	print("")
 	if _failures == 0:
@@ -537,6 +540,44 @@ func _test_invalid_save_preserves_progress() -> void:
 		_pass("invalid saves rejected without modifying the current session")
 	else:
 		_fail("invalid save accepted or live progress was modified")
+
+
+func _test_signal_quality() -> void:
+	var radio := RadioModel.new()
+	var no_target := is_zero_approx(radio.signal_quality())
+	radio.set_target(40.0, 60.0, 5.0)
+	radio.freq = 0.0
+	radio.amp = 0.0
+	var far := radio.signal_quality()
+	radio.freq = 40.0
+	radio.amp = 50.0
+	var near := radio.signal_quality()
+	radio.amp = 55.0
+	var edge := radio.signal_quality()
+	radio.amp = 60.0
+	var exact := radio.signal_quality()
+	if no_target and far < near and near < edge and edge < exact and is_equal_approx(exact, 1.0):
+		_pass("signal feedback improves on both axes")
+	else:
+		_fail("signal quality does not track distance")
+
+
+func _test_rotary_controls() -> void:
+	var scene: PackedScene = load("res://scenes/RadioConsole.tscn")
+	if scene == null or not scene.can_instantiate():
+		_fail("radio scene cannot instantiate")
+		return
+	var console: Node = scene.instantiate()
+	var freq: Range = console.get_node("VBox/Dials/Frequency/FreqDial")
+	var amp: Range = console.get_node("VBox/Dials/Amplitude/AmpDial")
+	freq.value = -10.0
+	amp.value = 110.0
+	var valid := freq.value == 0.0 and amp.value == 100.0 and freq.get_script() != null and amp.get_script() != null
+	console.free()
+	if valid:
+		_pass("rotary controls are wired and clamp to tuning range")
+	else:
+		_fail("rotary controls missing or outside range")
 
 
 # --- helpers ---

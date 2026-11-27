@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -25,4 +26,12 @@ jobs:
           godot --version
 
       - name: Run tests
-        run: godot --headless --path . --run-tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 90s godot --headless --path . --run-tests 2>&1 | tee /tmp/signal-drift-tests.log
+          if grep -q 'SCRIPT ERROR:' /tmp/signal-drift-tests.log; then
+            echo "Godot reported a script error"
+            exit 1
+          fi
+          grep -q 'ALL TESTS PASSED' /tmp/signal-drift-tests.log

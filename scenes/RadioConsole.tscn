@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://csigdriftradio"]
+[gd_scene load_steps=4 format=3 uid="uid://csigdriftradio"]
 
 [ext_resource type="Script" path="res://scripts/ui/RadioConsole.gd" id="1_radio"]
 [ext_resource type="Script" path="res://scripts/core/WaveformDisplay.gd" id="2_wave"]
+
+[ext_resource type="Script" path="res://scripts/ui/RotaryDial.gd" id="3_dial"]
 
 [node name="RadioConsole" type="Control"]
 layout_mode = 3
@@ -28,61 +30,77 @@ theme_override_constants/separation = 16
 [node name="ScreenLabel" type="Label" parent="VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "Radio Console"
+text = "SIGNAL / RECEIVER"
 horizontal_alignment = 1
 
 [node name="Waveform" type="Control" parent="VBox"]
-custom_minimum_size = Vector2(0, 180)
+custom_minimum_size = Vector2(0, 220)
 layout_mode = 2
 script = ExtResource("2_wave")
 
-[node name="Line" type="Line2D" parent="VBox/Waveform"]
-
-[node name="FreqRow" type="HBoxContainer" parent="VBox"]
+[node name="SignalLabel" type="Label" parent="VBox"]
 layout_mode = 2
-theme_override_constants/separation = 12
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+text = "SCANNING"
 
-[node name="FreqLabel" type="Label" parent="VBox/FreqRow"]
-custom_minimum_size = Vector2(120, 0)
+[node name="SignalMeter" type="ProgressBar" parent="VBox"]
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
-text = "Frequency"
+show_percentage = false
 
-[node name="FreqSlider" type="HSlider" parent="VBox/FreqRow"]
+[node name="Dials" type="HBoxContainer" parent="VBox"]
 layout_mode = 2
-size_flags_horizontal = 3
-min_value = 0.0
-max_value = 100.0
-step = 1.0
-value = 50.0
+theme_override_constants/separation = 24
 
-[node name="FreqValue" type="Label" parent="VBox/FreqRow"]
-custom_minimum_size = Vector2(50, 0)
-layout_mode = 2
-text = "50"
-horizontal_alignment = 2
-
-[node name="AmpRow" type="HBoxContainer" parent="VBox"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="AmpLabel" type="Label" parent="VBox/AmpRow"]
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-text = "Amplitude"
-
-[node name="AmpSlider" type="HSlider" parent="VBox/AmpRow"]
+[node name="Frequency" type="VBoxContainer" parent="VBox/Dials"]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
-max_value = 100.0
-step = 1.0
-value = 50.0
 
-[node name="AmpValue" type="Label" parent="VBox/AmpRow"]
-custom_minimum_size = Vector2(50, 0)
+[node name="FreqLabel" type="Label" parent="VBox/Dials/Frequency"]
 layout_mode = 2
+horizontal_alignment = 1
+text = "FREQUENCY"
+
+[node name="FreqDial" type="Range" parent="VBox/Dials/Frequency"]
+custom_minimum_size = Vector2(0, 230)
+layout_mode = 2
+value = 50.0
+script = ExtResource("3_dial")
+
+[node name="FreqValue" type="Label" parent="VBox/Dials/Frequency"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 32
 text = "50"
-horizontal_alignment = 2
+
+[node name="Amplitude" type="VBoxContainer" parent="VBox/Dials"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AmpLabel" type="Label" parent="VBox/Dials/Amplitude"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "AMPLITUDE"
+
+[node name="AmpDial" type="Range" parent="VBox/Dials/Amplitude"]
+custom_minimum_size = Vector2(0, 230)
+layout_mode = 2
+value = 50.0
+script = ExtResource("3_dial")
+
+[node name="AmpValue" type="Label" parent="VBox/Dials/Amplitude"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 32
+text = "50"
+
+[node name="Hint" type="Label" parent="VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Drag the dials up or right to increase; down or left to decrease."
 
 [node name="Spacer" type="Control" parent="VBox"]
 layout_mode = 2
@@ -91,7 +109,7 @@ size_flags_vertical = 3
 [node name="LockButton" type="Button" parent="VBox"]
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
-text = "Lock"
+text = "LOCK TRANSMISSION"
 
 [node name="StatusLabel" type="Label" parent="VBox"]
 custom_minimum_size = Vector2(0, 32)

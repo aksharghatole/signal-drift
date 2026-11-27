@@ -10,6 +10,8 @@ Frequency bands unlock as their transmissions are decoded; the Codex archives
 all decoded messages. Progress is saved locally in a versioned JSON file at
 `user://save.json`. Continue resumes the saved session; Settings can erase it
 with confirmation.
+The receiver has touch-friendly rotary dials, live interference feedback, and
+an instrument-inspired dark theme.
 
 See the Issues page for the roadmap and open work.
 
