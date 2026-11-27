@@ -1,9 +1,7 @@
 extends Control
 ## MessageView.gd
 ##
-## Displays the decoded message pulled from MessageDB.get_current().
-## On Back, advances MessageDB to the next message and returns to the
-## radio console.
+## Displays the most recently decoded message, then returns to the radio.
 
 const CHARACTERS_PER_SECOND := 55.0
 
@@ -18,7 +16,7 @@ func _ready() -> void:
 
 
 func _display_current_message() -> void:
-	var msg: Dictionary = MessageDB.get_current()
+	var msg: Dictionary = MessageDB.get_last_decoded()
 	if msg.is_empty():
 		title_label.text = "No message"
 		body_label.text = "No signal is currently being decoded."
@@ -40,6 +38,4 @@ func _display_current_message() -> void:
 
 
 func _on_back_pressed() -> void:
-	# Player read the message; move to the next one.
-	MessageDB.advance()
 	SceneRouter.go_back()

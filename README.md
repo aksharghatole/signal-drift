@@ -6,6 +6,8 @@ listening after a global storm.
 ## Status
 
 Playable MVP loop: main menu → radio console → decoded messages.
+Frequency bands unlock as their transmissions are decoded; the Codex archives
+all decoded messages for the current session. Progress is not yet saved to disk.
 
 See the Issues page for the roadmap and open work.
 

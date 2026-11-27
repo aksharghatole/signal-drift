@@ -32,6 +32,10 @@ func run_all() -> int:
 	_test_messages_have_required_fields()
 	_test_message_db_autoload_registered()
 
+	# M6 progression
+	_test_progression_unlocks_and_completion()
+	_test_codex_shows_only_decoded_messages()
+
 	print("")
 	if _failures == 0:
 		print("ALL TESTS PASSED")
@@ -436,6 +440,50 @@ func _test_message_db_autoload_registered() -> void:
 		_pass("MessageDB is registered as an autoload")
 	else:
 		_fail("MessageDB autoload not registered (got '%s')" % autoload_setting)
+
+
+# ---------------------------------------------------------------------------
+# M6 tests
+# ---------------------------------------------------------------------------
+
+func _test_progression_unlocks_and_completion() -> void:
+	MessageDB.reset()
+	var initial_ok: bool = MessageDB.get_unlocked_bands() == ["band_a"] and MessageDB.get_current().get("id") == "msg_001"
+	var locked_rejected: bool = not MessageDB.record_decode("msg_003")
+	var first_ok: bool = MessageDB.record_decode("msg_001")
+	var duplicate_rejected: bool = not MessageDB.record_decode("msg_001")
+	var still_locked: bool = MessageDB.get_unlocked_bands() == ["band_a"] and MessageDB.get_current().get("id") == "msg_002"
+	var second_ok: bool = MessageDB.record_decode("msg_002")
+	var unlocked: bool = MessageDB.get_unlocked_bands() == ["band_a", "band_b"] and MessageDB.get_current().get("id") == "msg_003"
+	var last_ok: bool = MessageDB.record_decode("msg_003")
+	var complete: bool = MessageDB.get_current().is_empty() and MessageDB.get_decoded_ids().size() == 3 and MessageDB.get_last_decoded().get("id") == "msg_003"
+	MessageDB.reset()
+	var reset_ok: bool = MessageDB.get_decoded_ids().is_empty() and MessageDB.get_last_decoded().is_empty()
+	if initial_ok and locked_rejected and first_ok and duplicate_rejected and still_locked and second_ok and unlocked and last_ok and complete and reset_ok:
+		_pass("progression unlocks bands, rejects invalid decodes, completes and resets")
+	else:
+		_fail("progression unlock or decode invariant violated")
+
+
+func _test_codex_shows_only_decoded_messages() -> void:
+	MessageDB.reset()
+	var scene: PackedScene = load("res://scenes/Codex.tscn")
+	var codex: Node = scene.instantiate()
+	Engine.get_main_loop().root.add_child(codex)
+	var entries: VBoxContainer = codex.get_node("VBox/Scroll/Entries")
+	var summary: Label = codex.get_node("VBox/Summary")
+	var empty_ok: bool = entries.get_child_count() == 1 and summary.text.begins_with("0 /")
+	MessageDB.record_decode("msg_001")
+	codex.populate()
+	var filled_ok: bool = entries.get_child_count() == 3 and summary.text.begins_with("1 /")
+	if filled_ok:
+		filled_ok = entries.get_child(0).text.contains("First Contact") and not entries.get_child(1).text.contains("canned goods")
+	codex.free()
+	MessageDB.reset()
+	if empty_ok and filled_ok:
+		_pass("Codex displays only decoded messages and handles empty state")
+	else:
+		_fail("Codex contents do not match decoded messages")
 
 
 # --- helpers ---
