@@ -75,6 +75,7 @@ func _on_amp_changed(value: float) -> void:
 
 func _update_feedback() -> void:
 	var quality := _radio.signal_quality()
+	AudioManager.set_signal_quality(quality)
 	waveform.set_values(_radio.freq, _radio.amp, quality)
 	signal_meter.value = quality * 100.0
 	if _radio.target == null:
@@ -96,6 +97,7 @@ func _on_lock_pressed() -> void:
 		Radio.LockResult.HIT:
 			_on_hit()
 		Radio.LockResult.MISS:
+			AudioManager.play_sfx("decode_fail")
 			status_label.text = "No signal at this position."
 		Radio.LockResult.NO_TARGET:
 			status_label.text = "No target set."
@@ -108,6 +110,7 @@ func _on_hit() -> void:
 		return
 
 	Signals.message_decoded.emit(msg_id)
+	AudioManager.play_sfx("decode_success")
 
 	_cooldown_remaining = COOLDOWN_SECONDS
 	lock_button.disabled = true
