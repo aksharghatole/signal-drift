@@ -40,6 +40,8 @@ func run_all() -> int:
 	_test_invalid_save_preserves_progress()
 	_test_signal_quality()
 	_test_rotary_controls()
+	_test_audio_streams()
+	_test_audio_preferences()
 
 	print("")
 	if _failures == 0:
@@ -578,6 +580,46 @@ func _test_rotary_controls() -> void:
 		_pass("rotary controls are wired and clamp to tuning range")
 	else:
 		_fail("rotary controls missing or outside range")
+
+
+func _test_audio_streams() -> void:
+	var valid := true
+	for key in ["ui_click", "decode_success", "decode_fail", "ambient_hum"]:
+		var stream: AudioStreamWAV = AudioManager.make_sound(key)
+		if stream == null or stream.data.is_empty() or stream.mix_rate != 22050:
+			valid = false
+			continue
+		if key == "ambient_hum":
+			valid = valid and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD and stream.loop_end == stream.data.size() / 2
+		else:
+			valid = valid and stream.loop_mode == AudioStreamWAV.LOOP_DISABLED
+	if valid and AudioManager.make_sound("unknown") == null:
+		_pass("original audio samples have valid PCM and loop settings")
+	else:
+		_fail("generated audio stream invalid")
+
+
+func _test_audio_preferences() -> void:
+	var script: GDScript = load("res://scripts/autoload/AudioManager.gd")
+	var writer: Node = script.new()
+	writer.settings_path = "user://audio_test_%d.cfg" % Time.get_ticks_usec()
+	writer.set_master_volume(1.5)
+	var upper: bool = is_equal_approx(writer.master_volume, 1.0)
+	writer.set_master_volume(-0.5)
+	var lower: bool = is_zero_approx(writer.master_volume)
+	writer.set_master_volume(0.42)
+	var saved: bool = writer.save_preferences()
+	var reader: Node = script.new()
+	reader.settings_path = writer.settings_path
+	reader.load_preferences()
+	var restored: bool = is_equal_approx(reader.master_volume, 0.42)
+	DirAccess.remove_absolute(writer.settings_path)
+	writer.free()
+	reader.free()
+	if upper and lower and saved and restored:
+		_pass("master volume clamps and persists independently of progression")
+	else:
+		_fail("master volume persistence failed")
 
 
 # --- helpers ---

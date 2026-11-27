@@ -24,6 +24,7 @@ Signals="*res://scripts/autoload/Signals.gd"
 SceneRouter="*res://scripts/autoload/SceneRouter.gd"
 MessageDB="*res://scripts/autoload/MessageDB.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
+AudioManager="*res://scripts/autoload/AudioManager.gd"
 
 [display]
 

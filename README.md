@@ -11,7 +11,9 @@ all decoded messages. Progress is saved locally in a versioned JSON file at
 `user://save.json`. Continue resumes the saved session; Settings can erase it
 with confirmation.
 The receiver has touch-friendly rotary dials, live interference feedback, and
-an instrument-inspired dark theme.
+an instrument-inspired dark theme. Original synthesized receiver hum, UI clicks,
+and lock tones work offline; master volume is adjustable in Settings.
+Audio is generated as PCM at runtime instead of shipping external OGG assets.
 
 See the Issues page for the roadmap and open work.
 
@@ -46,7 +48,7 @@ See the Issues page for the roadmap and open work.
     data/           messages.json and content
     scenes/         .tscn scene files
     scripts/
-      autoload/     Signals, SceneRouter, MessageDB
+      autoload/     Signals, SceneRouter, MessageDB, SaveManager, AudioManager
       core/         Radio, WaveformDisplay (no UI)
       ui/           one script per screen
     tests/          headless test runner
