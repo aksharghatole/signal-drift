@@ -118,3 +118,15 @@ func get_last_decoded() -> Dictionary:
 func reset() -> void:
 	_decoded_ids.clear()
 	_last_decoded_id = ""
+
+## Only restore a valid ordered prefix; roll back any invalid input.
+func restore_decoded_ids(ids: Array) -> bool:
+	var previous := _decoded_ids.duplicate()
+	var previous_last := _last_decoded_id
+	reset()
+	for id in ids:
+		if not id is String or not record_decode(id):
+			_decoded_ids = previous
+			_last_decoded_id = previous_last
+			return false
+	return true

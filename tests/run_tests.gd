@@ -35,6 +35,8 @@ func run_all() -> int:
 	# M6 progression
 	_test_progression_unlocks_and_completion()
 	_test_codex_shows_only_decoded_messages()
+	_test_save_round_trip_and_erase()
+	_test_invalid_save_preserves_progress()
 
 	print("")
 	if _failures == 0:
@@ -484,6 +486,57 @@ func _test_codex_shows_only_decoded_messages() -> void:
 		_pass("Codex displays only decoded messages and handles empty state")
 	else:
 		_fail("Codex contents do not match decoded messages")
+
+
+func _test_save_round_trip_and_erase() -> void:
+	MessageDB.reset()
+	var manager_script: GDScript = load("res://scripts/autoload/SaveManager.gd")
+	var writer: Node = manager_script.new()
+	writer.save_path = "user://signal_drift_test_%d.json" % Time.get_ticks_usec()
+	var reader: Node = manager_script.new()
+	reader.save_path = writer.save_path
+	writer._on_game_started()
+	var initial_ok: bool = writer.has_session() and FileAccess.file_exists(writer.save_path)
+	MessageDB.record_decode("msg_001")
+	MessageDB.record_decode("msg_002")
+	var saved: bool = writer.save()
+	MessageDB.reset()
+	var loaded: bool = reader.load_progress()
+	var restored: bool = reader.has_session() and MessageDB.get_decoded_ids() == ["msg_001", "msg_002"] and MessageDB.get_current().get("id") == "msg_003"
+	var erased: bool = reader.erase()
+	var clean: bool = not FileAccess.file_exists(reader.save_path) and not reader.has_session() and MessageDB.get_decoded_ids().is_empty()
+	writer.free()
+	reader.free()
+	MessageDB.reset()
+	if initial_ok and saved and loaded and restored and erased and clean:
+		_pass("save round trip restores unlocks and erase removes progress")
+	else:
+		_fail("save round trip or erase failed")
+
+
+func _test_invalid_save_preserves_progress() -> void:
+	MessageDB.reset()
+	MessageDB.record_decode("msg_001")
+	var manager_script: GDScript = load("res://scripts/autoload/SaveManager.gd")
+	var manager: Node = manager_script.new()
+	manager.save_path = "user://signal_drift_invalid_%d.json" % Time.get_ticks_usec()
+	var rejected: bool = true
+	for payload in ["not json", '{"version":999,"decoded_ids":[]}', '{"version":1,"decoded_ids":["msg_001","msg_003"]}', '{"version":1,"decoded_ids":["msg_001","msg_001"]}']:
+		var file := FileAccess.open(manager.save_path, FileAccess.WRITE)
+		if file == null:
+			rejected = false
+			break
+		file.store_string(payload)
+		file.close()
+		if manager.load_progress() or MessageDB.get_decoded_ids() != ["msg_001"]:
+			rejected = false
+	manager.erase()
+	manager.free()
+	MessageDB.reset()
+	if rejected:
+		_pass("invalid saves rejected without modifying the current session")
+	else:
+		_fail("invalid save accepted or live progress was modified")
 
 
 # --- helpers ---
